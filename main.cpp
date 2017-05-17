@@ -51,6 +51,35 @@ int main(int argc, char* argv[]) {
 	
 	//Print tree
 	cout << tree.toString() << endl;
+	
+	//Search tree
+	bool done = false;
+	while (!done) {
+		int input;
+		cout << "Enter next number to search for (0 to quit): " << flush;
+		cin >> input;
+		if (input == 0)
+			done = true;
+		else {
+			cout << (tree.inTree(input) ? "in tree" : "not in tree") << endl;
+		}
+	}
+	
+	//Remove from tree
+	done = false;
+	while (!done) {
+		int input;
+		cout << "Enter next number to remove (0 to quit): " << flush;
+		cin >> input;
+		if (input == 0)
+			done = true;
+		else {
+			cout << (tree.remove(input) ? "removed" : "not in tree") << endl;
+		}
+		
+		//Print
+		cout << tree.toString() << endl;
+	}
 
 	return 0;
 }

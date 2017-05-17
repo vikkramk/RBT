@@ -19,7 +19,7 @@ RBTree::RBTree() {
 	root = NULL;
 }
 
-//Get a node address based on value
+//Get a node address based on data
 RBTNode* RBTree::getNode(int data) {
 	std::queue<RBTNode*> todo;
 	todo.push(root);
@@ -42,40 +42,8 @@ RBTNode* RBTree::getNode(int data) {
 	return NULL;
 }
 
-//Add a node following BST rules
-void RBTree::BSTadd(int data) {
-	if (root == NULL) {
-		root = new RBTNode(data);
-		return;
-	}
-	
-	if (getNode(data) != NULL) {
-		return;
-	}
-	
-	bool added = false;
-	RBTNode* current = root;
-	while (!added) {
-		if (data < current->data) {
-			if (current->left == NULL) {
-				current->left = new RBTNode(data);
-				added = true;
-			}
-			else
-				current = current->left;
-		}
-		else {
-			if (current->right == NULL) {
-				current->right = new RBTNode(data);
-				added = true;
-			}
-			else
-				current = current->right;
-		}
-	}
-}
 
-//Get the parent of a node based on value
+//Get the parent of a node based on data
 RBTNode* RBTree::getParent(int data) {
 	std::queue<RBTNode*> todo;
 	todo.push(root);
@@ -113,6 +81,16 @@ RBTNode* RBTree::getUncle(int data) {
 			return gp->right;
 		if (gp->right == parent)
 			return gp->left;
+	}
+	
+	return NULL;
+}
+
+RBTNode* RBTree::getSibling(int data) {
+	RBTNode* p = getParent(data);
+	
+	if (p) {
+		return p->left->data == data ? p->right : p->left;
 	}
 	
 	return NULL;
@@ -164,6 +142,81 @@ void RBTree::rotateLeft(int data) {
 	}
 	else
 		root = rightchild;
+}
+
+//Add a node following BST rules
+void RBTree::BSTadd(int data) {
+	if (root == NULL) {
+		root = new RBTNode(data);
+		return;
+	}
+	
+	if (getNode(data) != NULL) {
+		return;
+	}
+	
+	bool added = false;
+	RBTNode* current = root;
+	while (!added) {
+		if (data < current->data) {
+			if (current->left == NULL) {
+				current->left = new RBTNode(data);
+				added = true;
+			}
+			else
+				current = current->left;
+		}
+		else {
+			if (current->right == NULL) {
+				current->right = new RBTNode(data);
+				added = true;
+			}
+			else
+				current = current->right;
+		}
+	}
+}
+
+
+//Remove a node following BST rules
+void RBTree::BSTremove(int data) {
+	RBTNode* node = getNode(data);
+	
+	//Nonexistant
+	if (!node) {
+		return;
+	}
+	
+	//Delete a leaf node
+	if (!node->left && !node->right) {
+		if (node != root) {
+			RBTNode* parent = getParent(data);
+			node == parent->left ? parent->left = NULL : parent->right = NULL;
+		}
+		delete node;
+	}
+	
+	//Delete a node with two children
+	if (node->left && node->right) {
+		//Find inorder successor (minimum of right subtree)
+		RBTNode* parent, *successor = node->right;
+		while (successor->left)
+			successor = successor->left;
+		
+		int successordata = successor->data;
+		BSTremove(successor->data);
+		
+		//Replace data with successor
+		node->data = successordata;
+	}
+	
+	//Delete a node with 1 child
+	RBTNode* child = node->left ? node->left : node->right;
+	//Move values to this node and delete child
+	node->data = child->data;
+	node->right = child->right;
+	node->left = child->left;
+	delete child;
 }
 
 void RBTree::add(int data) {
@@ -253,6 +306,185 @@ void RBTree::add(int data) {
 		}
 	}
 	
+}
+
+bool RBTree::remove(int data) {
+	//Hold the node
+	RBTNode* node = getNode(data);
+	
+	//No such node
+	if (!node) {
+		return false;
+	}
+	
+	bool nodecolor = node->color;
+	
+	//Internal node
+	if (node->right && node->left) {
+		std::cout << "internal node" << endl;
+		//Get successor and parent
+		RBTNode* successor = node->right, *sparent;
+		while (successor->left) successor = successor->left;
+		sparent = getParent(successor->data);
+		
+		//Store the value
+		int successorval = successor->data;
+		
+		//Delete the successor
+		deleteLineNode(successor);
+		
+		//Put value of successor in node
+		node->data = successorval;
+	}
+	
+	//Line node
+	else {
+		deleteLineNode(node);
+	}
+	
+	return true;
+}
+
+//Delete a node with one or two children
+void RBTree::deleteLineNode(RBTNode* node) {
+	std::cout << "line node " << node->data << endl;
+	
+	//Get child (either the non-null child or null)
+	RBTNode* child = node->left ? node->left : node->right;
+	
+	//Replace node with child (relink through child)
+	RBTNode* parent = getParent(node->data);
+	if (parent) {
+		parent->left == node ? parent->left = child : parent->right = child;
+	}
+	else {	//Root
+		root = child;
+	}
+	
+	//Node is red, nothing to do
+	if (node->color == RED) {}
+	
+	//Node is black, child is red
+	else if (node->color == BLACK && child && child->color == RED) {
+		std::cout << "just coloring" << endl;
+		child->color = BLACK;
+	}
+	
+	//Node to delete is black and child is black
+	else {
+		if (parent)
+			removalRestructure(parent);
+		//std::cout << toString() << endl;
+		removalRestructure(child);
+	}
+}
+
+//Restructuring the tree for use in removal of node
+void RBTree::removalRestructure(RBTNode* node) {
+	std::cout << "restructure" << endl;
+	
+	bool done = false;
+	int step = 1;
+	RBTNode* fnode = node, *fparent, *fsibling;	//Nodes in focus
+	
+	while (!done) {
+		fparent = getParent(node->data);
+		fsibling = getSibling(node->data);
+		
+		if (step == 1) {
+			//Case 1: it's the root, else go on
+			if (fnode == root)
+				done == true;
+			else
+				step = 2;
+		}
+		else if (step == 2) {
+			//Case 2, sibling is red
+			if (fsibling && fsibling->color == RED) {
+				//Switch colors
+				int temp = fsibling->color;
+				fsibling->color = fparent->color;
+				fparent->color = temp;
+				
+				//Rotate away from side node is on
+				if (node == fparent->left)
+					rotateLeft(fparent->data);
+				else
+					rotateRight(fparent->data);
+			}
+			
+			//Continue
+			step = 3;
+		}
+		else if (step == 3) {
+			//Case 3, parent, sibling, and siblings children are black
+			if (fparent->color == BLACK && 
+			fsibling->color == BLACK && 
+			(!fsibling->left || fsibling->left->color == BLACK) &&
+			(!fsibling->right || fsibling->left->color == BLACK)) {
+				fsibling->color = RED;
+				//Restructure from parent starting at step 1
+				fnode = fparent;
+				step = 1;
+			}
+			//Or try step 4
+			else
+				step = 4;
+		}
+		else if (step == 4) {
+			//Case 4, parent is red, sibling and sibling's children black
+			if (fparent->color == RED &&
+			fsibling->color == BLACK &&
+			(!fsibling->left || fsibling->left->color == BLACK) &&
+			(!fsibling->right || fsibling->right->color == BLACK)) {
+				fsibling->color = RED;
+				fparent->color = BLACK;
+				done = true;
+			}
+			//Or try step 5
+			else
+				step = 5;
+		}
+		else if (step == 5) {
+			//Case 5, sibling is black right child, sibling right black, sibling left red
+			if (fsibling->color == BLACK) {
+				if ((fnode == fparent->left) &&
+				(!fsibling->right || fsibling->right->color == BLACK) &&
+				(fsibling->left && fsibling->left->color == RED)) {
+					fsibling->color = RED;
+					fsibling->left->color = BLACK;
+					rotateRight(fsibling->data);
+				}
+				//Flipped
+				else if ((fnode == fparent->right) &&
+				(!fsibling->left || fsibling->left->color == BLACK) &&
+				(fsibling->right && fsibling->right->color == RED)) {
+					fsibling->color = RED;
+					fsibling->right->color = BLACK;
+					rotateLeft(fsibling->data);
+				}
+			}
+			//Go to step 6
+			step = 6;
+		}
+		else if (step == 6) {
+			fsibling->color = fparent->color;
+			fparent->color = BLACK;
+			
+			if (fnode == fparent->left) {
+				fsibling->right->color = BLACK;
+				rotateLeft(fparent->data);
+			}
+			else {
+				fsibling->left->color = BLACK;
+				rotateRight(fparent->data);
+			}
+		}
+	}
+}
+
+bool RBTree::inTree(int data) {
+	return getNode(data) != NULL;
 }
 
 std::string RBTree::toString() {
