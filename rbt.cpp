@@ -71,7 +71,25 @@ void RBTNode::setRight(RBTNode* child) {
 void RBTNode::setLeft(RBTNode* child) {
 	this->left = child;
 	child->parent = this;
-}	
+}
+
+//Is this node a left child
+bool RBTNode::isLeft() {
+	if (this->parent) {
+		return this->parent->left == this;
+	}
+	
+	return false;
+}
+
+//Is this node a left child
+bool RBTNode::isRight() {
+	if (this->parent) {
+		return this->parent->right == this;
+	}
+	
+	return false;
+}
 
 //RBTree constructor
 RBTree::RBTree() {
@@ -336,98 +354,86 @@ bool RBTree::remove(int data) {
 	std::cout << "chopped\n" << toString() << endl;
 	
 	//If either node or child is red, color the replacing child red
-	if (node->color == RED || child->color == RED) {
+	if (node->color == RED) {
 		std::cout << "that was easy" << endl;
 		child->color = BLACK;
 	}
-	
-	//Both black
 	else {
-		std::cout << "both black" << endl;
+		child->color = DOUBLE_BLACK;
+	}
 		
-		RBTNode* current = child;
+	//Set the node to start restructuring on
+	RBTNode* current = child;
+	
+	//Eliminate double black
+	while (current->color == DOUBLE_BLACK && current != root) {
+		RBTNode* sibling = current->getSibling();
 		
-		//Make the replaced node double black
-		current->color = DOUBLE_BLACK;
+		cout << toString() << endl;
+		cout << sibling->data << sibling->parent->data << sibling->parent->left->data << sibling->parent->right->data << endl;
 		
-		//Eliminate double black
-		while (current->color == DOUBLE_BLACK && current != root) {
-			RBTNode* sibling = current->getSibling();
-			
-			cout << toString() << endl;
-			cout << sibling->data << sibling->parent->data << sibling->parent->left->data << sibling->parent->right->data << endl;
-			
-			//Case a: sibling black and sibling has a red child
-			if (sibling->color == BLACK && 
-				(sibling->left->color == RED || sibling->right->color == RED)) {
-				std::cout << "case a" << endl;
-				
-				RBTNode* redchild = sibling->left->color == RED ? sibling->left : sibling->right;
-				std::cout << "redchild" << redchild->data << endl;
-				
-				//Left Left (sibling left child and red child is left child)
-				//Also counts if both of sibling's child are red
-				if ((sibling->left->color == RED && sibling->right->color == RED) ||
-					(sibling->parent->left == sibling &&
-					sibling->left == redchild)) {
-					std::cout << "left left" << endl;
-					rotateRight(sibling->parent);
-					sibling->parent->getSibling()->color = BLACK;
+		if (sibling->color == BLACK) {
+			if (current->isLeft()) {
+				//Case 1: black sibling, red sibling's child
+				if (sibling->right->color == RED) {
+					rotateLeft(current->parent);
 					current->color = BLACK;
 				}
-				//Right Right, mirror of left left
-				else if(sibling->parent->right == sibling && sibling->right == redchild) {
-					std::cout << "right right" << endl;
-					rotateLeft(sibling->parent);
-					sibling->parent->getSibling()->color = BLACK;
-					current->color = BLACK;
-				}
-				//Left Right (sibling left child and red child is right child)
-				else if (sibling->parent->left == sibling && sibling->right == redchild) {
-					std::cout << "left right" << endl;
-					rotateLeft(sibling);
-				}
-				//Right Left, mirror of left right
-				else {
-					std::cout << "right left" << endl;
+				else if (sibling->left->color == RED) {
 					rotateRight(sibling);
-					sibling->parent->color = BLACK;
-					sibling->color = RED;
+					rotateLeft(current->parent);
+					current->color = BLACK;
 				}
-			}
-			//Case b: sibling is black and both children are black
-			else if (sibling->color == BLACK && 
-				sibling->left->color == BLACK && sibling->right->color == BLACK) {
-				std::cout << "case b" << endl;
-					
-				sibling->color = RED;
-				current->color == BLACK;
-				if (current->parent->color == BLACK) {
-					current->parent->color == DOUBLE_BLACK;
-					current = current->parent;	//Redo on parent
-				}
-				else
+				
+				//Case 2: black sibling, black sibling's children
+				else if (current->parent->color == RED) {
 					current->parent->color = BLACK;
-			}
-			//Case c: sibling is red
-			else if (sibling->color == RED) {
-				std::cout << "case c" << endl;
-				
-				//Rotate to move the sibling up
-				
-				//Left case
-				if (sibling->parent->left == sibling) {
-					rotateRight(sibling->parent);
+					sibling->color = RED;
+					current->color = BLACK;
 				}
-				//Right case
 				else {
-					rotateLeft(sibling->parent);
+					sibling->color = RED;
+					current->parent->color = DOUBLE_BLACK;
+					current->color = BLACK;
+					current = current->parent;
+				}
+			}
+			else {
+				//Case 1: black sibling, red sibling's child
+				if (sibling->left->color == RED) {
+					rotateRight(current->parent);
+					current->color = BLACK;
+				}
+				else if (sibling->right->color == RED) {
+					rotateLeft(sibling);
+					rotateRight(current->parent);
+					current->color = BLACK;
 				}
 				
-				//Switch colors of parent and old sibling
-				current->parent->color = RED;
-				current->getGrandparent()->color = BLACK;
+				//Case 2: black sibling, black sibling's children
+				else if (current->parent->color == RED) {
+					current->parent->color = BLACK;
+					sibling->color = RED;
+					current->color = BLACK;
+				}
+				else {
+					sibling->color = RED;
+					current->parent->color = DOUBLE_BLACK;
+					current->color = BLACK;
+					current = current->parent;
+				}
 			}
+		}
+		
+		//Case 3: sibling is red
+		else if (sibling->color == RED) {
+			//Rotate to move the sibling up
+			if (current->isLeft())
+				rotateLeft(current->parent);
+			else
+				rotateRight(current->parent);
+			current->parent->color = RED;
+			current->getGrandparent()->color = BLACK;
 		}
 		
 		//If root, make single black

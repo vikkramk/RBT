@@ -18,6 +18,8 @@ struct RBTNode {
 	int getColor();
 	void setRight(RBTNode* child);
 	void setLeft(RBTNode* child);
+	bool isLeft();
+	bool isRight();
 	
 	int data;
 	int color;
