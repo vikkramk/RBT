@@ -1,84 +1,68 @@
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
 #include "rbt.h"
 using namespace std;
 
-int main(int argc, char* argv[]) {
+int main() {
 	RBTree tree;
+	string command;
 	
-	//Manual input of numbers
-	if (argc == 1) {
-		bool done = false;
-		while (!done) {
-			int input;
-			cout << "Enter next number to add (0 to quit): " << flush;
-			cin >> input;
-			if (input == 0)
-				done = true;
-			else {
-				tree.add(input);
-			}
-		}
-	}
-	
-	//File input
-	else if (argc == 2) {
-		ifstream numfile;
-
-    numfile.open(argv[1]);
-    if (!numfile.good()) {
-      cout << "Useage: " << argv[0] << " <filepath>" << endl;
-      return 1;
-    }
-				
-		bool done = false;
-		while (!done) {
-			int input;
-			numfile >> input;
-			
-			if (input == 0)
-				done = true;
-			else {
-				tree.add(input);
-			}
-		}
-	}
-	
-	else {
-		cout << "Useage: " << argv[0] << " <filepath>" << endl;
-    return 1;
-	}
-	
-	//Print tree
-	cout << tree.toString() << endl;
-	
-	//Search tree
 	bool done = false;
 	while (!done) {
-		int input;
-		cout << "Enter next number to search for (0 to quit): " << flush;
-		cin >> input;
-		if (input == 0)
-			done = true;
-		else {
-			cout << (tree.inTree(input) ? "in tree" : "not in tree") << endl;
-		}
-	}
-	
-	//Remove from tree
-	done = false;
-	while (!done) {
-		int input;
-		cout << "Enter next number to remove (0 to quit): " << flush;
-		cin >> input;
-		if (input == 0)
-			done = true;
-		else {
-			cout << (tree.remove(input) ? "removed" : "not in tree") << endl;
-		}
+		cout << "ENTER ADD, REMOVE, SEARCH, ADDFILE, PRINT, OR QUIT: " << flush;
+		cin >> command;
 		
-		//Print
-		cout << tree.toString() << endl;
+		if (command == "ADD") {
+			int num;
+			cout << "ENTER NUMBER: " << flush;
+			cin >> num;
+			tree.add(num);
+			cout << "ADDED" << endl;
+		}
+		else if (command == "REMOVE") {
+			int num;
+			cout << "ENTER NUMBER: " << flush;
+			cin >> num;
+			cout << (tree.remove(num) ? "REMOVED" : "NOT IN TREE") << endl;
+		}
+		else if (command == "SEARCH") {
+			int num;
+			cout << "ENTER NUMBER: " << flush;
+			cin >> num;
+			cout << (tree.inTree(num) ? "IN TREE" : "NOT IN TREE") << endl;
+		}
+		else if (command == "ADDFILE") {
+			string filename;
+			cout << "ENTER FILENAME: " << flush;
+			cin >> filename;
+			
+			ifstream numfile;
+
+			numfile.open(filename.c_str());
+			if (!numfile.good()) {
+				cout << "NO SUCH FILE" << endl;
+				continue;
+			}
+					
+			bool done = false;
+			string token;
+			while (std::getline(numfile, token, ',')) {
+				int num = atoi(token.c_str());
+				tree.add(num);
+			}
+			
+			cout << "ADDED" << endl;
+		}
+		else if (command == "PRINT") {
+			cout << tree.toString() << endl;
+		}
+		else if (command == "QUIT") {
+			done = true;
+		}
+		else {
+			cout << "INVALID COMMAND" << endl;
+		}
 	}
 
 	return 0;

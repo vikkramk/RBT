@@ -91,6 +91,7 @@ bool RBTNode::isRight() {
 	return false;
 }
 
+
 //RBTree constructor
 RBTree::RBTree() {
 	root = NULL;
@@ -100,6 +101,9 @@ RBTree::RBTree() {
 RBTNode* RBTree::getNode(int data) {
 	std::queue<RBTNode*> todo;
 	todo.push(root);
+	
+	if (root == NULL)
+		return NULL;
 	
 	while (todo.size() != 0) {
 		RBTNode* node = todo.front();
@@ -149,8 +153,6 @@ void RBTree::rotateLeft(RBTNode* node) {
 	if (node == NULL || node->isNULL() || node->right->isNULL())
 		return;
 	
-	std::cout << "left rotating" << endl;
-	
 	parent = node->parent;
 	
 	rightchild = node->right;
@@ -171,7 +173,10 @@ void RBTree::rotateLeft(RBTNode* node) {
 
 //Add a node following BST rules
 void RBTree::BSTadd(int data) {
-	if (root == NULL) {
+	if (root == NULL || root->isNULL()) {
+		if (root) {
+			delete root;
+		}
 		root = new RBTNode(data);
 		root->color = RED;
 		root->setLeft(new RBTNode());
@@ -219,19 +224,13 @@ void RBTree::add(int data) {
 	//Standard BST insertion
 	BSTadd(data);
 	
-	std::cout << toString() << endl;
-	
 	//Get the node for the new data, set to red
 	node = getNode(data);
 	node->color = RED;
 	
 	while (!inserted) {
 		RBTNode* parent = node->parent;
-	
-		std:: cout << "hey" << node->data << endl;
-	
-		std::cout << toString() << endl;
-	
+		
 		/*Step 2*/
 		//If the node is root, set to black
 		if (node == root) {
@@ -261,7 +260,6 @@ void RBTree::add(int data) {
 			else {
 				//Case i (left left)
 				if (grandparent->left == parent && parent->left == node) {
-					std::cout << "case 1" << endl;
 					
 					rotateRight(grandparent);
 					
@@ -273,17 +271,14 @@ void RBTree::add(int data) {
 				}
 				//Case ii (left right)
 				else if (grandparent->left == parent && parent->right == node) {
-					std::cout << "case 2" << endl;
 					rotateLeft(parent);
 					
 					//Leave to do left left case on next iteration
 					node = parent; //Set to old parent
 					
-					std::cout << "umm" << endl;
 				}
 				//Case iii (right right)
 				else if (grandparent->right == parent && parent->right == node) {
-					std::cout << "case 3" << endl;
 					rotateLeft(grandparent);
 					
 					bool temp = grandparent->color;
@@ -294,7 +289,6 @@ void RBTree::add(int data) {
 				}
 				//Case iv (right left)
 				else if (grandparent->right == parent && parent->left == node) {
-					std::cout << "case 4" << endl;
 					rotateRight(parent);
 					//Leave to do right right case on next iteration
 					node = node->right;
@@ -304,7 +298,6 @@ void RBTree::add(int data) {
 		
 		//Otherwise nothing more to do
 		else {
-			std::cout << "done" << endl;
 			inserted = true;
 		}
 	}
@@ -337,7 +330,7 @@ bool RBTree::remove(int data) {
 	//Get the child (the one that is not NULL, or a NULL if both are)
 	//Delete the other child
 	RBTNode* child;
-	if (node->left) {
+	if (!node->left->isNULL()) {
 		child = node->left;
 		delete node->right;
 	}
@@ -346,105 +339,132 @@ bool RBTree::remove(int data) {
 		delete node->left;
 	}
 	
-	if (node->parent->left == node)
-		node->parent->setLeft(child);
-	else
-		node->parent->setRight(child);
-	
-	std::cout << "chopped\n" << toString() << endl;
-	
-	//If either node or child is red, color the replacing child red
-	if (node->color == RED) {
-		std::cout << "that was easy" << endl;
-		child->color = BLACK;
+	if (node == root) {
+		root = child;
 	}
 	else {
-		child->color = DOUBLE_BLACK;
-	}
-		
-	//Set the node to start restructuring on
-	RBTNode* current = child;
-	
-	//Eliminate double black
-	while (current->color == DOUBLE_BLACK && current != root) {
-		RBTNode* sibling = current->getSibling();
-		
-		cout << toString() << endl;
-		cout << sibling->data << sibling->parent->data << sibling->parent->left->data << sibling->parent->right->data << endl;
-		
-		if (sibling->color == BLACK) {
-			if (current->isLeft()) {
-				//Case 1: black sibling, red sibling's child
-				if (sibling->right->color == RED) {
-					rotateLeft(current->parent);
-					current->color = BLACK;
-				}
-				else if (sibling->left->color == RED) {
-					rotateRight(sibling);
-					rotateLeft(current->parent);
-					current->color = BLACK;
-				}
-				
-				//Case 2: black sibling, black sibling's children
-				else if (current->parent->color == RED) {
-					current->parent->color = BLACK;
-					sibling->color = RED;
-					current->color = BLACK;
-				}
-				else {
-					sibling->color = RED;
-					current->parent->color = DOUBLE_BLACK;
-					current->color = BLACK;
-					current = current->parent;
-				}
-			}
-			else {
-				//Case 1: black sibling, red sibling's child
-				if (sibling->left->color == RED) {
-					rotateRight(current->parent);
-					current->color = BLACK;
-				}
-				else if (sibling->right->color == RED) {
-					rotateLeft(sibling);
-					rotateRight(current->parent);
-					current->color = BLACK;
-				}
-				
-				//Case 2: black sibling, black sibling's children
-				else if (current->parent->color == RED) {
-					current->parent->color = BLACK;
-					sibling->color = RED;
-					current->color = BLACK;
-				}
-				else {
-					sibling->color = RED;
-					current->parent->color = DOUBLE_BLACK;
-					current->color = BLACK;
-					current = current->parent;
-				}
-			}
-		}
-		
-		//Case 3: sibling is red
-		else if (sibling->color == RED) {
-			//Rotate to move the sibling up
-			if (current->isLeft())
-				rotateLeft(current->parent);
-			else
-				rotateRight(current->parent);
-			current->parent->color = RED;
-			current->getGrandparent()->color = BLACK;
-		}
-		
-		//If root, make single black
-		if (current == root) {
-			current->color = BLACK;
-		}
+		if (node->isLeft())
+			node->parent->setLeft(child);
+		else
+			node->parent->setRight(child);
 	}
 	
-	delete node;	//Delete the node
+	//If the removed node was black
+	if (node->color == BLACK ) {
+		//Just recolor if the replacing child is red
+		if (child->color == RED) {
+			child->color = BLACK;
+		}
+		//Else run the cases
+		else {
+			//Set the node to start restructuring on
+			RBTNode* current = child;
+			bool done = false;
+			int step = 1;	//Start on step 1
+			
+			//Run steps until done
+			while (!done) {
+				RBTNode* sibling = current->getSibling();
+				RBTNode* parent = current->parent;
+			
+				//Step 1
+				if (step == 1) {
+					//Done if reached root
+					if (current == root)
+						done = true;
+					//Else go on
+					else
+						step = 2;
+				}
+				//Step 2
+				else if (step == 2) {
+					//Sibling red
+					if (sibling->color == RED) {
+						parent->color = RED;
+						sibling->color = BLACK;
+						if (current->isLeft())
+							rotateLeft(parent);
+						else
+							rotateRight(parent);
+					}
+					//Go on
+					step = 3;
+				}
+				else if (step == 3) {
+					//Parent, sibling, and sibling's children black
+					if ((parent->color == BLACK) &&
+						(sibling->color == BLACK) &&
+						(sibling->left->color == BLACK) &&
+						(sibling->right->color == BLACK)) {
+						sibling->color = RED;
+						//Go back to start on parent
+						current = parent;
+						step = 1;
+					}
+					//Else go on
+					else
+						step = 4;
+				}
+				else if (step == 4) {
+					//Parent red, sibling and sibling's children black
+					if ((parent->color == RED) &&
+						(sibling->color == BLACK) &&
+						(sibling->left->color == BLACK) &&
+						(sibling->right->color == BLACK)) {
+						sibling->color = RED;
+						parent->color = BLACK;
+						done = true;
+					}
+					//Else go on
+					else
+						step = 5;
+				}
+				else if (step == 5) {
+					//Sibling black with one black and one red child
+					if (sibling->color == BLACK) {
+						if (current->isLeft() &&
+							sibling->right->color == BLACK &&
+							sibling->left->color == RED) {
+								sibling->color = RED;
+								sibling->left->color = BLACK;
+								rotateRight(sibling);
+						}
+						else if (current->isRight() &&
+							sibling->left->color == BLACK &&
+							sibling->right->color == RED) {
+								sibling->color = RED;
+								sibling->right->color = BLACK;
+								rotateLeft(sibling);
+						}
+					}
+					//Go on
+					step = 6;
+				}
+				else if (step == 6) {
+					//Flip sibling and parent colors
+					sibling->color = parent->color;
+					parent->color = BLACK;
+					
+					//Rotate and recolor
+					if (current->isLeft()) {
+						sibling->right->color = BLACK;
+						rotateLeft(parent);
+					}
+					else {
+						sibling->left->color = BLACK;
+						rotateRight(parent);
+					}
+					
+					done = true;
+				}
+			}
+		}
+	}
 	
-	return true;	//Success
+	//Remove the node
+	delete node;
+	
+	return true;
 }
 
 bool RBTree::inTree(int data) {
